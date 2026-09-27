@@ -1,4 +1,4 @@
-path: D:/Works/Works/computer-vision/data/datasets/toll6k
+path: D:/Computer_Vision_Course-main/computer_vision/data/datasets/toll6k
 
 train: images/train
 val: images/val
