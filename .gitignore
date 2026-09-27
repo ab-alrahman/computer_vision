@@ -1,0 +1,8 @@
+﻿datasets/
+runs/
+models/*.onnx
+__pycache__/
+*.pyc
+.venv/
+.env
+data/raw/
