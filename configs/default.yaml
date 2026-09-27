@@ -1,0 +1,40 @@
+video:
+  input: data/raw/traffic_clip.mp4
+  output: runs/vision/output.mp4
+  report: runs/vision/report.json
+
+model:
+  path: models/yolo11n.pt
+  confidence_threshold: 0.35
+  image_size: 640
+
+tracker:
+  max_distance_px: 80
+  max_lost_frames: 10
+
+class_colors:
+  car: [255, 128, 0]
+  van: [0, 165, 255]
+  bus: [0, 255, 255]
+  truck: [0, 180, 0]
+  motorcycle: [255, 0, 255]
+  traffic-police motorcycle: [255, 255, 0]
+
+toll_prices:
+  car: 1.0
+  van: 1.5
+  bus: 2.0
+  truck: 2.5
+  motorcycle: 0.0
+  traffic-police motorcycle: 0.0
+
+counting_lines:
+  - name: main
+    points: [[100, 360], [1180, 360]]
+    inbound_when_crossing: top_to_bottom
+
+speed_limit_kph: 80.0
+
+runtime:
+  max_frames:
+  display: false
