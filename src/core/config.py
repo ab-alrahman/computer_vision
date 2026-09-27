@@ -35,9 +35,16 @@ class RuntimeConfig:
 
 
 @dataclass(frozen=True)
+class TrackerConfig:
+    max_distance_px: float
+    max_lost_frames: int
+
+
+@dataclass(frozen=True)
 class AppConfig:
     video: VideoConfig
     model: ModelConfig
+    tracker: TrackerConfig
     class_colors: dict[str, tuple[int, int, int]]
     toll_prices: dict[str, float]
     counting_lines: list[CountingLineConfig]
@@ -80,6 +87,7 @@ def load_config(path: str | Path) -> AppConfig:
 
     video_raw = raw.get("video") or {}
     model_raw = raw.get("model") or {}
+    tracker_raw = raw.get("tracker") or {}
     runtime_raw = raw.get("runtime") or {}
 
     return AppConfig(
@@ -92,6 +100,10 @@ def load_config(path: str | Path) -> AppConfig:
             path=_resolve_path(model_raw.get("path", "models/yolo11n.pt"), base_dir),
             confidence_threshold=float(model_raw.get("confidence_threshold", 0.35)),
             image_size=int(model_raw.get("image_size", 640)),
+        ),
+        tracker=TrackerConfig(
+            max_distance_px=float(tracker_raw.get("max_distance_px", 80.0)),
+            max_lost_frames=int(tracker_raw.get("max_lost_frames", 10)),
         ),
         class_colors={
             str(name): _as_color(color)
@@ -108,4 +120,3 @@ def load_config(path: str | Path) -> AppConfig:
             display=bool(runtime_raw.get("display", False)),
         ),
     )
-

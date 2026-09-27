@@ -6,6 +6,7 @@ from pathlib import Path
 from src.core.config import load_config
 from src.pipeline.detector import YoloDetector
 from src.pipeline.source import VideoSource
+from src.pipeline.tracker import CentroidTracker
 
 
 def main() -> int:
@@ -29,28 +30,50 @@ def main() -> int:
         print("         add the clip path in configs/default.yaml when available")
         return 0
 
+    smoke_frames = config.runtime.max_frames or 5
+
     with VideoSource(config.video.input_path) as source:
-        first_frame = next(source.frames(max_frames=1), None)
-        if first_frame is None:
-            raise SystemExit("[source] video opened but no frames were read")
         print("[source] smoke read passed")
         print(f"  fps: {source.fps:.2f}")
         print(f"  frames: {source.frame_count}")
-        print(f"  first frame shape: {first_frame.image.shape}")
 
         detector = YoloDetector(
             model_path=config.model.path,
             confidence_threshold=config.model.confidence_threshold,
             image_size=config.model.image_size,
         )
-        detections = detector.detect(first_frame.image)
-        print("[detector] smoke inference passed")
-        print(f"  detections: {len(detections)}")
-        for detection in detections[:10]:
-            bbox = detection.bbox
+        tracker = CentroidTracker(
+            max_distance_px=config.tracker.max_distance_px,
+            max_lost_frames=config.tracker.max_lost_frames,
+        )
+
+        frames_seen = 0
+        total_detections = 0
+        for frame in source.frames(max_frames=smoke_frames):
+            if frames_seen == 0:
+                print(f"  first frame shape: {frame.image.shape}")
+            detections = detector.detect(frame.image)
+            tracks = tracker.update(detections)
+            frames_seen += 1
+            total_detections += len(detections)
             print(
-                f"  - {detection.class_name} {detection.score:.2f} "
-                f"bbox=({bbox.x1:.0f},{bbox.y1:.0f},{bbox.x2:.0f},{bbox.y2:.0f})"
+                f"[frame {frame.frame_index}] detections={len(detections)} "
+                f"active_tracks={len(tracks)}"
+            )
+
+        if frames_seen == 0:
+            raise SystemExit("[source] video opened but no frames were read")
+
+        print("[detector] smoke inference passed")
+        print(f"  frames processed: {frames_seen}")
+        print(f"  detections total: {total_detections}")
+        print("[tracker] smoke tracking passed")
+        print(f"  tracks kept: {len(tracker.tracks)}")
+        for track in tracker.active_tracks[:10]:
+            center = track.centroid
+            print(
+                f"  - track #{track.track_id} {track.class_name} "
+                f"score={track.score:.2f} center=({center.x:.0f},{center.y:.0f})"
             )
 
     Path(config.video.output_path).parent.mkdir(parents=True, exist_ok=True)

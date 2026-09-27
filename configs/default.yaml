@@ -8,6 +8,10 @@ model:
   confidence_threshold: 0.35
   image_size: 640
 
+tracker:
+  max_distance_px: 80
+  max_lost_frames: 10
+
 class_colors:
   car: [255, 128, 0]
   van: [0, 165, 255]
@@ -34,4 +38,3 @@ speed_limit_kph: 80.0
 runtime:
   max_frames:
   display: false
-

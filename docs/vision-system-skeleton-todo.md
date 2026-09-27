@@ -68,12 +68,12 @@
 
 ## Phase 6 - Tracker MVP
 
-- [ ] بناء tracker بسيط كبداية: Centroid أو IoU.
-- [ ] إعطاء `track_id` ثابت قدر الإمكان.
-- [ ] إدارة حالة track: active / lost.
-- [ ] حفظ آخر مركز لكل track.
-- [ ] حفظ `counted = false/true`.
-- [ ] حذف tracks القديمة بعد عدد frames محدد.
+- [x] بناء tracker بسيط كبداية: Centroid أو IoU.
+- [x] إعطاء `track_id` ثابت قدر الإمكان.
+- [x] إدارة حالة track: active / lost.
+- [x] حفظ آخر مركز لكل track.
+- [x] حفظ `counted = false/true`.
+- [x] حذف tracks القديمة بعد عدد frames محدد.
 
 ## Phase 7 - Geometry & Counting
 

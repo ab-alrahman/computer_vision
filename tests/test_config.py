@@ -13,6 +13,7 @@ class ConfigTests(TestCase):
 
         self.assertEqual(config.model.path.name, "yolo11n.pt")
         self.assertEqual(config.model.confidence_threshold, 0.35)
+        self.assertEqual(config.tracker.max_distance_px, 80.0)
         self.assertEqual(config.toll_prices["truck"], 2.5)
         self.assertEqual(config.counting_lines[0].name, "main")
 
