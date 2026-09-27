@@ -87,12 +87,12 @@
 
 ## Phase 8 - Rules
 
-- [ ] حساب رسوم العبور حسب نوع المركبة.
-- [ ] تسجيل `PASSAGE` event عند العبور.
-- [ ] تسجيل `MOTORCYCLE_VIOLATION` للدراجات العادية.
-- [ ] تجاهل المخالفة لـ `traffic-police motorcycle`.
-- [ ] تجهيز placeholder لـ `SPEED_VIOLATION`.
-- [ ] إضافة test لحساب الرسوم.
+- [x] حساب رسوم العبور حسب نوع المركبة.
+- [x] تسجيل `PASSAGE` event عند العبور.
+- [x] تسجيل `MOTORCYCLE_VIOLATION` للدراجات العادية.
+- [x] تجاهل المخالفة لـ `traffic-police motorcycle`.
+- [x] تجهيز placeholder لـ `SPEED_VIOLATION`.
+- [x] إضافة test لحساب الرسوم.
 
 ## Phase 9 - Annotator
 
