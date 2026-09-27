@@ -1,5 +1,5 @@
 video:
-  input: data/raw/traffic_clip.mp4
+  input: data/raw/video/traffic_clip.mp4
   output: runs/vision/output.mp4
   report: runs/vision/report.json
 
