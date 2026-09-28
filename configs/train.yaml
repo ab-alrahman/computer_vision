@@ -3,8 +3,8 @@ data: data/toll6k.yaml
 
 epochs: 100
 imgsz: 640
-batch: 16
-device: auto
+batch: 8
+device: 0
 workers: 0
 
 project: runs
@@ -25,7 +25,7 @@ patience: 25
 
 freeze: 10
 close_mosaic: 10
-amp: false
+amp: true
 cache: false
 plots: true
 

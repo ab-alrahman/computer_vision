@@ -123,11 +123,11 @@
 
 ## Phase 12 - Tests
 
-- [ ] test تحميل config.
-- [ ] test حساب الرسوم.
-- [ ] test عبور الخط.
-- [ ] test منع العد المكرر.
-- [ ] test rule الخاصة بـ motorcycle violation.
+- [x] test تحميل config.
+- [x] test حساب الرسوم.
+- [x] test عبور الخط.
+- [x] test منع العد المكرر.
+- [x] test rule الخاصة بـ motorcycle violation.
 
 ## Suggested Execution Order
 
