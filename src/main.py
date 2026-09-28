@@ -13,18 +13,42 @@ from src.pipeline.tracker import CentroidTracker
 from src.services.report import build_report, write_report
 
 
+def positive_int(value: str) -> int:
+    parsed = int(value)
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("value must be a positive integer")
+    return parsed
+
+
+def resolve_max_frames(config_value: int | None, cli_value: int | None, all_frames: bool) -> int | None:
+    if all_frames:
+        return None
+    if cli_value is not None:
+        return cli_value
+    return config_value if config_value is not None else 5
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Smart toll road vision pipeline")
     parser.add_argument("--config", default="configs/default.yaml")
+    frame_group = parser.add_mutually_exclusive_group()
+    frame_group.add_argument("--max-frames", type=positive_int, help="maximum frames to process")
+    frame_group.add_argument("--all-frames", action="store_true", help="process the full video")
+    parser.add_argument("--output", help="override annotated video output path")
+    parser.add_argument("--report", help="override JSON report output path")
     args = parser.parse_args()
 
     config = load_config(args.config)
+    output_path = Path(args.output).resolve() if args.output else config.video.output_path
+    report_path = Path(args.report).resolve() if args.report else config.video.report_path
+    max_frames = resolve_max_frames(config.runtime.max_frames, args.max_frames, args.all_frames)
 
     print("[config] loaded")
     print(f"  model: {config.model.path}")
     print(f"  input: {config.video.input_path}")
-    print(f"  output: {config.video.output_path}")
-    print(f"  report: {config.video.report_path}")
+    print(f"  output: {output_path}")
+    print(f"  report: {report_path}")
+    print(f"  max frames: {'all' if max_frames is None else max_frames}")
 
     if not config.model.path.is_file():
         raise SystemExit(f"[model] missing model file: {config.model.path}")
@@ -33,8 +57,6 @@ def main() -> int:
         print("[source] input video is not present yet; skeleton is ready")
         print("         add the clip path in configs/default.yaml when available")
         return 0
-
-    smoke_frames = config.runtime.max_frames or 5
 
     with VideoSource(config.video.input_path) as source:
         print("[source] smoke read passed")
@@ -63,11 +85,11 @@ def main() -> int:
         passages = []
         violations = []
         writer = None
-        for frame in source.frames(max_frames=smoke_frames):
+        for frame in source.frames(max_frames=max_frames):
             if frames_seen == 0:
                 print(f"  first frame shape: {frame.image.shape}")
                 height, width = frame.image.shape[:2]
-                writer = VideoWriter(config.video.output_path, source.fps, (width, height))
+                writer = VideoWriter(output_path, source.fps, (width, height))
                 writer.__enter__()
             try:
                 detections = detector.detect(frame.image)
@@ -123,15 +145,14 @@ def main() -> int:
                 f"score={track.score:.2f} center=({center.x:.0f},{center.y:.0f})"
             )
 
-    Path(config.video.output_path).parent.mkdir(parents=True, exist_ok=True)
     report = build_report(passages, violations)
-    report_path = write_report(config.video.report_path, report)
+    report_path = write_report(report_path, report)
     print("[report] wrote JSON report")
     print(f"  path: {report_path}")
     print(f"  total passages: {report['summary']['totalPassages']}")
     print(f"  total revenue: {report['summary']['totalRevenue']:.2f}")
     print("[annotator] wrote annotated video")
-    print(f"  path: {config.video.output_path}")
+    print(f"  path: {output_path}")
     return 0
 
 

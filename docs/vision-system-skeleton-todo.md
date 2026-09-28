@@ -115,11 +115,11 @@
 
 ## Phase 11 - Main CLI
 
-- [ ] إنشاء `src/main.py`.
-- [ ] إضافة CLI argument باسم `--config`.
-- [ ] تشغيل pipeline كامل:
+- [x] إنشاء `src/main.py`.
+- [x] إضافة CLI argument باسم `--config`.
+- [x] تشغيل pipeline كامل:
   `source -> detector -> tracker -> geometry -> rules -> annotator -> report`.
-- [ ] طباعة ملخص في نهاية التشغيل: عدد المركبات، المخالفات، الدخل، مسارات الملفات الناتجة.
+- [x] طباعة ملخص في نهاية التشغيل: عدد المركبات، المخالفات، الدخل، مسارات الملفات الناتجة.
 
 ## Phase 12 - Tests
 

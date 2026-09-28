@@ -36,5 +36,5 @@ counting_lines:
 speed_limit_kph: 80.0
 
 runtime:
-  max_frames:
+  max_frames: 5
   display: false
