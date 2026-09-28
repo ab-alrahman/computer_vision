@@ -1,14 +1,8 @@
-import os
-from openimages.download import download_dataset
+from roboflow import Roboflow
 
-OUTPUT_DIR = r"D:/Computer_Vision_Course-main/computer_vision/data/datasets"
+# تنزيل مجموعة بيانات جاهزة وموسومة لسيارات الفان
+rf = Roboflow(api_key="zeyXbmWTVrmC4Ulz5H3F") # أو استخدم API Key الخاص بك من حسابك
+project = rf.workspace("roboflow-100-models").project("van-detection")
+dataset = project.version(1).download("yolov8")
 
-print("جاري تنزيل صور الفان (Van)...")
-
-download_dataset(
-    dest_dir=OUTPUT_DIR,
-    class_labels=["Van"],
-    limit=500
-)
-
-print("تم تنزيل الصور والملفات المرافقة بنجاح في مجلد المشروع!")
+print("تم تنزيل البيانات في المجلد:", dataset.location)
