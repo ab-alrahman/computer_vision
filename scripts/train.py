@@ -65,8 +65,31 @@ def git_commit() -> str:
         return "unknown"
 
 
-def detect_device(requested: str | None) -> str | int:
+def detect_device(requested: str | int | None) -> str | int:
+    if isinstance(requested, int):
+        if torch.cuda.is_available():
+            return requested
+        raise SystemExit(
+            f"[device] CUDA device {requested} was requested, but this Python environment "
+            "has a CPU-only PyTorch build. Install a CUDA-enabled torch package."
+        )
     if requested and requested != "auto":
+        value = requested.strip().lower()
+        if value.isdigit():
+            device_id = int(value)
+            if torch.cuda.is_available():
+                return device_id
+            raise SystemExit(
+                f"[device] CUDA device {device_id} was requested, but this Python environment "
+                "has a CPU-only PyTorch build. Install a CUDA-enabled torch package."
+            )
+        if value.startswith("cuda"):
+            if torch.cuda.is_available():
+                return 0 if value == "cuda" else int(value.split(":", 1)[1])
+            raise SystemExit(
+                f"[device] {requested} was requested, but this Python environment "
+                "has a CPU-only PyTorch build. Install a CUDA-enabled torch package."
+            )
         return requested
     mps = getattr(getattr(torch.backends, "mps", None), "is_available", None)
     if callable(mps) and mps():
