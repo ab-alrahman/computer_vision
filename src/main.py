@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from src.core.config import load_config
+from src.pipeline.annotator import Annotator, VideoWriter
 from src.pipeline.detector import YoloDetector
 from src.pipeline.geometry import CountingLine, LineCounter
 from src.pipeline.rules import RuleEngine
@@ -49,37 +50,52 @@ def main() -> int:
             max_distance_px=config.tracker.max_distance_px,
             max_lost_frames=config.tracker.max_lost_frames,
         )
-        counters = [
-            LineCounter(CountingLine.from_config(line_config))
-            for line_config in config.counting_lines
-        ]
+        counting_lines = [CountingLine.from_config(line_config) for line_config in config.counting_lines]
+        counters = [LineCounter(line) for line in counting_lines]
         rules = RuleEngine(
             toll_prices=config.toll_prices,
             speed_limit_kph=config.speed_limit_kph,
         )
+        annotator = Annotator(config.class_colors)
 
         frames_seen = 0
         total_detections = 0
         passages = []
         violations = []
+        writer = None
         for frame in source.frames(max_frames=smoke_frames):
             if frames_seen == 0:
                 print(f"  first frame shape: {frame.image.shape}")
-            detections = detector.detect(frame.image)
-            tracks = tracker.update(detections)
-            frame_passages = []
-            for counter in counters:
-                frame_passages.extend(counter.update(tracks, frame.frame_index, frame.timestamp_seconds))
-            priced_passages, frame_violations = rules.apply_passages(frame_passages)
-            passages.extend(priced_passages)
-            violations.extend(frame_violations)
-            frames_seen += 1
-            total_detections += len(detections)
-            print(
-                f"[frame {frame.frame_index}] detections={len(detections)} "
-                f"active_tracks={len(tracks)} passages={len(priced_passages)} "
-                f"violations={len(frame_violations)}"
-            )
+                height, width = frame.image.shape[:2]
+                writer = VideoWriter(config.video.output_path, source.fps, (width, height))
+                writer.__enter__()
+            try:
+                detections = detector.detect(frame.image)
+                tracks = tracker.update(detections)
+                frame_passages = []
+                for counter in counters:
+                    frame_passages.extend(counter.update(tracks, frame.frame_index, frame.timestamp_seconds))
+                priced_passages, frame_violations = rules.apply_passages(frame_passages)
+                passages.extend(priced_passages)
+                violations.extend(frame_violations)
+                frames_seen += 1
+                total_detections += len(detections)
+                hud = {
+                    "tracks": len(tracks),
+                    "passages": len(passages),
+                    "violations": len(violations),
+                }
+                annotator.draw(frame.image, tracks, counting_lines, frame_violations, hud)
+                writer.write(frame.image)
+                print(
+                    f"[frame {frame.frame_index}] detections={len(detections)} "
+                    f"active_tracks={len(tracks)} passages={len(priced_passages)} "
+                    f"violations={len(frame_violations)}"
+                )
+            finally:
+                pass
+        if writer is not None:
+            writer.__exit__(None, None, None)
 
         if frames_seen == 0:
             raise SystemExit("[source] video opened but no frames were read")
@@ -114,6 +130,8 @@ def main() -> int:
     print(f"  path: {report_path}")
     print(f"  total passages: {report['summary']['totalPassages']}")
     print(f"  total revenue: {report['summary']['totalRevenue']:.2f}")
+    print("[annotator] wrote annotated video")
+    print(f"  path: {config.video.output_path}")
     return 0
 
 

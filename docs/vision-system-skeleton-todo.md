@@ -96,13 +96,13 @@
 
 ## Phase 9 - Annotator
 
-- [ ] رسم bounding boxes.
-- [ ] رسم `track_id`.
-- [ ] رسم class name.
-- [ ] رسم confidence.
-- [ ] رسم counting line.
-- [ ] رسم counters على الفيديو.
-- [ ] التأكد أن اللون الأحمر محجوز فقط للمخالفات.
+- [x] رسم bounding boxes.
+- [x] رسم `track_id`.
+- [x] رسم class name.
+- [x] رسم confidence.
+- [x] رسم counting line.
+- [x] رسم counters على الفيديو.
+- [x] التأكد أن اللون الأحمر محجوز فقط للمخالفات.
 
 ## Phase 10 - Report
 
