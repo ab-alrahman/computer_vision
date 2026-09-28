@@ -9,6 +9,7 @@ from src.pipeline.geometry import CountingLine, LineCounter
 from src.pipeline.rules import RuleEngine
 from src.pipeline.source import VideoSource
 from src.pipeline.tracker import CentroidTracker
+from src.services.report import build_report, write_report
 
 
 def main() -> int:
@@ -107,7 +108,12 @@ def main() -> int:
             )
 
     Path(config.video.output_path).parent.mkdir(parents=True, exist_ok=True)
-    Path(config.video.report_path).parent.mkdir(parents=True, exist_ok=True)
+    report = build_report(passages, violations)
+    report_path = write_report(config.video.report_path, report)
+    print("[report] wrote JSON report")
+    print(f"  path: {report_path}")
+    print(f"  total passages: {report['summary']['totalPassages']}")
+    print(f"  total revenue: {report['summary']['totalRevenue']:.2f}")
     return 0
 
 

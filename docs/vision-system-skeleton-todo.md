@@ -106,11 +106,11 @@
 
 ## Phase 10 - Report
 
-- [ ] تجميع counts حسب class + direction.
-- [ ] حساب total revenue.
-- [ ] حفظ قائمة passages.
-- [ ] حفظ قائمة violations.
-- [ ] إخراج `report.json`.
+- [x] تجميع counts حسب class + direction.
+- [x] حساب total revenue.
+- [x] حفظ قائمة passages.
+- [x] حفظ قائمة violations.
+- [x] إخراج `report.json`.
 - [ ] إخراج `report.csv` لاحقا.
 
 ## Phase 11 - Main CLI
