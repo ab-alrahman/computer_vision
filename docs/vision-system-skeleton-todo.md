@@ -77,22 +77,22 @@
 
 ## Phase 7 - Geometry & Counting
 
-- [ ] تعريف counting line واحد كبداية.
-- [ ] كشف عبور track للخط.
-- [ ] تحديد اتجاه تقريبي: `INBOUND` أو `OUTBOUND`.
-- [ ] منع العد المكرر لنفس track.
+- [x] تعريف counting line واحد كبداية.
+- [x] كشف عبور track للخط.
+- [x] تحديد اتجاه تقريبي: `INBOUND` أو `OUTBOUND`.
+- [x] منع العد المكرر لنفس track.
 - [ ] إضافة deadband بسيط حول الخط لاحقا إذا ظهرت مشكلة توقف فوق الخط.
-- [ ] إضافة test لعبور الخط.
-- [ ] إضافة test لمنع العد المكرر.
+- [x] إضافة test لعبور الخط.
+- [x] إضافة test لمنع العد المكرر.
 
 ## Phase 8 - Rules
 
-- [ ] حساب رسوم العبور حسب نوع المركبة.
-- [ ] تسجيل `PASSAGE` event عند العبور.
-- [ ] تسجيل `MOTORCYCLE_VIOLATION` للدراجات العادية.
-- [ ] تجاهل المخالفة لـ `traffic-police motorcycle`.
-- [ ] تجهيز placeholder لـ `SPEED_VIOLATION`.
-- [ ] إضافة test لحساب الرسوم.
+- [x] حساب رسوم العبور حسب نوع المركبة.
+- [x] تسجيل `PASSAGE` event عند العبور.
+- [x] تسجيل `MOTORCYCLE_VIOLATION` للدراجات العادية.
+- [x] تجاهل المخالفة لـ `traffic-police motorcycle`.
+- [x] تجهيز placeholder لـ `SPEED_VIOLATION`.
+- [x] إضافة test لحساب الرسوم.
 
 ## Phase 9 - Annotator
 

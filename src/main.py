@@ -5,6 +5,8 @@ from pathlib import Path
 
 from src.core.config import load_config
 from src.pipeline.detector import YoloDetector
+from src.pipeline.geometry import CountingLine, LineCounter
+from src.pipeline.rules import RuleEngine
 from src.pipeline.source import VideoSource
 from src.pipeline.tracker import CentroidTracker
 
@@ -46,19 +48,36 @@ def main() -> int:
             max_distance_px=config.tracker.max_distance_px,
             max_lost_frames=config.tracker.max_lost_frames,
         )
+        counters = [
+            LineCounter(CountingLine.from_config(line_config))
+            for line_config in config.counting_lines
+        ]
+        rules = RuleEngine(
+            toll_prices=config.toll_prices,
+            speed_limit_kph=config.speed_limit_kph,
+        )
 
         frames_seen = 0
         total_detections = 0
+        passages = []
+        violations = []
         for frame in source.frames(max_frames=smoke_frames):
             if frames_seen == 0:
                 print(f"  first frame shape: {frame.image.shape}")
             detections = detector.detect(frame.image)
             tracks = tracker.update(detections)
+            frame_passages = []
+            for counter in counters:
+                frame_passages.extend(counter.update(tracks, frame.frame_index, frame.timestamp_seconds))
+            priced_passages, frame_violations = rules.apply_passages(frame_passages)
+            passages.extend(priced_passages)
+            violations.extend(frame_violations)
             frames_seen += 1
             total_detections += len(detections)
             print(
                 f"[frame {frame.frame_index}] detections={len(detections)} "
-                f"active_tracks={len(tracks)}"
+                f"active_tracks={len(tracks)} passages={len(priced_passages)} "
+                f"violations={len(frame_violations)}"
             )
 
         if frames_seen == 0:
@@ -69,6 +88,17 @@ def main() -> int:
         print(f"  detections total: {total_detections}")
         print("[tracker] smoke tracking passed")
         print(f"  tracks kept: {len(tracker.tracks)}")
+        print("[geometry] smoke counting passed")
+        print(f"  passages: {len(passages)}")
+        for passage in passages[:10]:
+            print(
+                f"  - track #{passage.track_id} {passage.class_name} "
+                f"direction={passage.direction.value} amount={passage.amount:.2f} "
+                f"frame={passage.frame_index}"
+            )
+        print("[rules] smoke rules passed")
+        print(f"  violations: {len(violations)}")
+        print(f"  speed limit placeholder: {config.speed_limit_kph:.1f} kph")
         for track in tracker.active_tracks[:10]:
             center = track.centroid
             print(
