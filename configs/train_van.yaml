@@ -14,6 +14,7 @@ exist_ok: false
 seed: 42
 deterministic: true
 verbose: true
+heartbeat_seconds: 60
 
 optimizer: auto
 lr0: 0.001

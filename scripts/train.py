@@ -20,6 +20,7 @@ import os
 import platform
 import subprocess
 import sys
+import threading
 import time
 from collections import Counter
 from datetime import datetime, timezone
@@ -143,7 +144,6 @@ def build_train_args(config: dict, overrides: dict) -> dict:
         "batch": config.get("batch", 16),
         "device": config.get("device", 0),
         "workers": 0,
-        "amp": config.get("amp", True),
         "project": config.get("project", "runs"),
         "name": config.get("name", "toll6"),
         "exist_ok": config.get("exist_ok", False),
@@ -209,6 +209,56 @@ def read_history(run_dir: Path) -> dict:
         }
 
     return {"epochsRun": len(rows), "best": pick(best), "final": pick(final)}
+
+
+def read_latest_epoch(run_dir: Path) -> dict | None:
+    path = run_dir / "results.csv"
+    if not path.is_file():
+        return None
+    with path.open(newline="", encoding="utf-8") as handle:
+        rows = [{k.strip(): v for k, v in row.items()} for row in csv.DictReader(handle)]
+    rows = [row for row in rows if row.get("epoch") not in (None, "")]
+    if not rows:
+        return None
+    row = rows[-1]
+    return {
+        "epoch": row.get("epoch", "?"),
+        "precision": row.get("metrics/precision(B)", "?"),
+        "recall": row.get("metrics/recall(B)", "?"),
+        "map50": row.get("metrics/mAP50(B)", "?"),
+        "map5095": row.get("metrics/mAP50-95(B)", "?"),
+    }
+
+
+def start_training_heartbeat(run_dir: Path, interval_seconds: int) -> tuple[threading.Event, threading.Thread | None]:
+    stop_event = threading.Event()
+    if interval_seconds <= 0:
+        return stop_event, None
+
+    started = time.time()
+
+    def heartbeat() -> None:
+        while not stop_event.wait(interval_seconds):
+            elapsed_min = (time.time() - started) / 60.0
+            latest = read_latest_epoch(run_dir)
+            if latest:
+                print(
+                    "[heartbeat] training still running "
+                    f"elapsed={elapsed_min:.1f}m epoch={latest['epoch']} "
+                    f"P={latest['precision']} R={latest['recall']} "
+                    f"mAP50={latest['map50']} mAP50-95={latest['map5095']}",
+                    flush=True,
+                )
+            else:
+                print(
+                    "[heartbeat] training still running "
+                    f"elapsed={elapsed_min:.1f}m waiting for first epoch...",
+                    flush=True,
+                )
+
+    thread = threading.Thread(target=heartbeat, name="training-heartbeat", daemon=True)
+    thread.start()
+    return stop_event, thread
 
 
 def per_class_metrics(model: YOLO, data: str, imgsz: int, device, split: str,
@@ -494,8 +544,16 @@ def main() -> int:
         print(f"        {key} = {value}")
 
     started = time.time()
+    expected_run_dir = Path(train_args["project"]) / train_args["name"]
+    heartbeat_seconds = int(config.get("heartbeat_seconds", 60))
+    heartbeat_stop, heartbeat_thread = start_training_heartbeat(expected_run_dir, heartbeat_seconds)
     model = YOLO(config.get("model", "yolo11n.pt"))
-    model.train(**train_args)
+    try:
+        model.train(**train_args)
+    finally:
+        heartbeat_stop.set()
+        if heartbeat_thread is not None:
+            heartbeat_thread.join(timeout=2)
     duration = time.time() - started
 
     run_dir = resolve_run_dir(model, train_args)
