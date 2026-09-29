@@ -1,13 +1,13 @@
-path: D:/Computer_Vision_Course-main/computer_vision/data
+path: D:/Computer_Vision_Course-main/computer_vision/data/raw/dataset
 
 train: train/images
 val: valid/images
 test: test/images
 
 names:
- # 0: car
   0: van
-  #2: bus
- # 3: truck
- # 4: motorcycle
- # 5: traffic-police motorcycle
+  1: car
+  2: bus
+  3: truck
+  4: motorcycle
+  5: traffic-police motorcycle

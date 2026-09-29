@@ -141,8 +141,9 @@ def build_train_args(config: dict, overrides: dict) -> dict:
         "epochs": config.get("epochs", 80),
         "imgsz": config.get("imgsz", 640),
         "batch": config.get("batch", 16),
-        "device": config.get("device", "auto"),
-        "workers": config.get("workers", 0),
+        "device": config.get("device", 0),
+        "workers": 0,
+        "amp": config.get("amp", True),
         "project": config.get("project", "runs"),
         "name": config.get("name", "toll6"),
         "exist_ok": config.get("exist_ok", False),
@@ -467,6 +468,15 @@ def main() -> int:
 
     train_args = build_train_args(config, overrides)
     train_args["device"] = detect_device(train_args["device"])
+
+    # استخدام NVIDIA GPU مع تفعيل AMP، وإجبار Windows على workers=0
+    if isinstance(train_args["device"], int):
+        train_args["amp"] = True
+        train_args["workers"] = 0
+        print(f"[gpu] NVIDIA: {torch.cuda.get_device_name(train_args['device'])}")
+    else:
+        train_args["amp"] = False
+
     print(f"[env] python {platform.python_version()} torch {torch.__version__} "
           f"device {train_args['device']} cores {os.cpu_count()}")
 

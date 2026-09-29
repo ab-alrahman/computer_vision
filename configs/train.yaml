@@ -5,6 +5,7 @@ epochs: 100
 imgsz: 640
 batch: 8
 device: 0
+amp: true
 workers: 0
 
 project: runs
@@ -25,7 +26,6 @@ patience: 25
 
 freeze: 10
 close_mosaic: 10
-amp: true
 cache: false
 plots: true
 
@@ -65,7 +65,7 @@ precision_targets:
 
 min_class_instances:
   van: 150
-  traffic-police motorcycle: 60
+  traffic-police motorcycle: 0
 
 conf_sweep:
   thresholds: [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90]
