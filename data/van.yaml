@@ -1,0 +1,8 @@
+path: D:/Computer_Vision_Course-main/computer_vision/data/raw/dataset
+
+train: train/images
+val: valid/images
+test: test/images
+
+names:
+  0: van

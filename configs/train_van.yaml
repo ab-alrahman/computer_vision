@@ -1,0 +1,65 @@
+model: models/yolo11n.pt
+data: data/van.yaml
+
+epochs: 80
+imgsz: 640
+batch: 8
+device: 0
+amp: true
+workers: 0
+
+project: models
+name: van_full
+exist_ok: false
+seed: 42
+deterministic: true
+verbose: true
+
+optimizer: auto
+lr0: 0.001
+lrf: 0.01
+cos_lr: true
+momentum: 0.937
+weight_decay: 0.0005
+warmup_epochs: 3
+patience: 20
+
+freeze: 10
+close_mosaic: 10
+cache: false
+plots: true
+
+hsv_h: 0.015
+hsv_s: 0.7
+hsv_v: 0.4
+degrees: 0.0
+translate: 0.1
+scale: 0.5
+shear: 0.0
+perspective: 0.0
+flipud: 0.0
+fliplr: 0.5
+mosaic: 1.0
+mixup: 0.1
+copy_paste: 0.0
+
+recall_targets:
+  van:
+    recall: 0.80
+
+precision_targets:
+  van:
+    precision: 0.90
+
+min_class_instances:
+  van: 150
+
+conf_sweep:
+  thresholds: [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90]
+  min_precision: 0.95
+
+export:
+  format: onnx
+  int8: true
+  simplify: true
+  opset: 12
