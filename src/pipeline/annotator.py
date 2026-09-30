@@ -11,6 +11,7 @@ from src.pipeline.geometry import CountingLine
 
 VIOLATION_COLOR = (0, 0, 255)
 DEFAULT_COLOR = (255, 255, 255)
+COUNTING_LINE_COLOR = (192, 192, 192)
 
 
 class Annotator:
@@ -73,9 +74,9 @@ def draw_track(image, track: Track, color: tuple[int, int, int]) -> None:
 def draw_counting_line(image, line: CountingLine) -> None:
     start = (int(line.start.x), int(line.start.y))
     end = (int(line.end.x), int(line.end.y))
-    cv2.line(image, start, end, (255, 255, 255), 2)
+    cv2.line(image, start, end, COUNTING_LINE_COLOR, 3)
     cv2.putText(image, line.name, (start[0], max(15, start[1] - 10)),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, COUNTING_LINE_COLOR, 1, cv2.LINE_AA)
 
 
 def draw_hud(image, counters: dict[str, int]) -> None:
@@ -84,4 +85,3 @@ def draw_hud(image, counters: dict[str, int]) -> None:
         cv2.putText(image, f"{label}: {value}", (12, y), cv2.FONT_HERSHEY_SIMPLEX,
                     0.55, (255, 255, 255), 2, cv2.LINE_AA)
         y += 22
-
