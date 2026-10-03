@@ -41,10 +41,19 @@ class TrackerConfig:
 
 
 @dataclass(frozen=True)
+class SpeedConfig:
+    enabled: bool
+    calibration_path: Path | None
+    hysteresis_kph: float
+    smoothing_alpha: float
+
+
+@dataclass(frozen=True)
 class AppConfig:
     video: VideoConfig
     model: ModelConfig
     tracker: TrackerConfig
+    speed: SpeedConfig
     class_colors: dict[str, tuple[int, int, int]]
     toll_prices: dict[str, float]
     counting_lines: list[CountingLineConfig]
@@ -77,6 +86,17 @@ def _as_line(raw: dict[str, Any]) -> CountingLineConfig:
     )
 
 
+def _as_speed(raw: dict[str, Any], base_dir: Path) -> SpeedConfig:
+    calibration = raw.get("calibration")
+    calibration_path = _resolve_path(calibration, base_dir) if calibration else None
+    return SpeedConfig(
+        enabled=bool(raw.get("enabled", True)),
+        calibration_path=calibration_path,
+        hysteresis_kph=float(raw.get("hysteresis_kph", 3.0)),
+        smoothing_alpha=float(raw.get("smoothing_alpha", 0.3)),
+    )
+
+
 def load_config(path: str | Path) -> AppConfig:
     config_path = Path(path).resolve()
     if not config_path.is_file():
@@ -89,6 +109,7 @@ def load_config(path: str | Path) -> AppConfig:
     model_raw = raw.get("model") or {}
     tracker_raw = raw.get("tracker") or {}
     runtime_raw = raw.get("runtime") or {}
+    speed_raw = raw.get("speed") or {}
 
     return AppConfig(
         video=VideoConfig(
@@ -105,6 +126,7 @@ def load_config(path: str | Path) -> AppConfig:
             max_distance_px=float(tracker_raw.get("max_distance_px", 80.0)),
             max_lost_frames=int(tracker_raw.get("max_lost_frames", 10)),
         ),
+        speed=_as_speed(speed_raw, base_dir),
         class_colors={
             str(name): _as_color(color)
             for name, color in (raw.get("class_colors") or {}).items()

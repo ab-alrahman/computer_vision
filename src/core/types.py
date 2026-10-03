@@ -82,6 +82,8 @@ class PassageEvent:
     amount: float
     frame_index: int
     timestamp_seconds: float
+    speed_kph: float = 0.0
+    average_speed_kph: float = 0.0
 
 
 @dataclass(frozen=True)

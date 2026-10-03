@@ -19,8 +19,10 @@ class Annotator:
         self.class_colors = class_colors
 
     def draw(self, image, tracks: list[Track], lines: Iterable[CountingLine],
-             violations: list[ViolationEvent], counters: dict[str, int]) -> None:
+             violations: list[ViolationEvent], counters: dict[str, int],
+             extra_violation_track_ids: set[int] | None = None) -> None:
         violation_track_ids = {event.track_id for event in violations}
+        violation_track_ids |= extra_violation_track_ids or set()
         for line in lines:
             draw_counting_line(image, line)
         for track in tracks:

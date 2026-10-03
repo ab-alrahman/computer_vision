@@ -1,5 +1,5 @@
 video:
-  input: data/raw/video/traffic_clip.mp4
+  input: data/raw/video/Road traffic video for object recognition.mp4
   output: runs/vision/output.mp4
   report: runs/vision/report.json
 
@@ -30,11 +30,17 @@ toll_prices:
 
 counting_lines:
   - name: main
-    points: [[100, 360], [1180, 360]]
+    points: [[16, 403], [1090, 403]]
     inbound_when_crossing: top_to_bottom
 
 speed_limit_kph: 80.0
 
+speed:
+  enabled: true
+  calibration: configs/calibration.json
+  hysteresis_kph: 3.0
+  smoothing_alpha: 0.3
+
 runtime:
-  max_frames: 5
+  max_frames: 15
   display: false
