@@ -49,11 +49,27 @@ class SpeedConfig:
 
 
 @dataclass(frozen=True)
+class EnhancementConfig:
+    enabled: bool
+    denoise: bool
+    denoise_diameter: int
+    denoise_sigma_color: float
+    denoise_sigma_space: float
+    clahe: bool
+    clahe_clip_limit: float
+    clahe_grid: int
+    sharpen: bool
+    sharpen_radius: float
+    sharpen_amount: float
+
+
+@dataclass(frozen=True)
 class AppConfig:
     video: VideoConfig
     model: ModelConfig
     tracker: TrackerConfig
     speed: SpeedConfig
+    enhancement: EnhancementConfig
     class_colors: dict[str, tuple[int, int, int]]
     toll_prices: dict[str, float]
     counting_lines: list[CountingLineConfig]
@@ -97,6 +113,28 @@ def _as_speed(raw: dict[str, Any], base_dir: Path) -> SpeedConfig:
     )
 
 
+def _as_enhancement(raw: dict[str, Any]) -> EnhancementConfig:
+    clahe_grid = int(raw.get("clahe_grid", 8))
+    if clahe_grid < 1:
+        raise ValueError(f"enhancement clahe_grid must be >= 1, got {clahe_grid}")
+    denoise_diameter = int(raw.get("denoise_diameter", 5))
+    if denoise_diameter <= 0 or denoise_diameter % 2 == 0:
+        raise ValueError(f"enhancement denoise_diameter must be a positive odd number, got {denoise_diameter}")
+    return EnhancementConfig(
+        enabled=bool(raw.get("enabled", True)),
+        denoise=bool(raw.get("denoise", True)),
+        denoise_diameter=denoise_diameter,
+        denoise_sigma_color=float(raw.get("denoise_sigma_color", 40.0)),
+        denoise_sigma_space=float(raw.get("denoise_sigma_space", 40.0)),
+        clahe=bool(raw.get("clahe", True)),
+        clahe_clip_limit=float(raw.get("clahe_clip_limit", 2.0)),
+        clahe_grid=clahe_grid,
+        sharpen=bool(raw.get("sharpen", True)),
+        sharpen_radius=float(raw.get("sharpen_radius", 3.0)),
+        sharpen_amount=float(raw.get("sharpen_amount", 0.6)),
+    )
+
+
 def load_config(path: str | Path) -> AppConfig:
     config_path = Path(path).resolve()
     if not config_path.is_file():
@@ -110,6 +148,7 @@ def load_config(path: str | Path) -> AppConfig:
     tracker_raw = raw.get("tracker") or {}
     runtime_raw = raw.get("runtime") or {}
     speed_raw = raw.get("speed") or {}
+    enhancement_raw = raw.get("enhancement") or {}
 
     return AppConfig(
         video=VideoConfig(
@@ -127,6 +166,7 @@ def load_config(path: str | Path) -> AppConfig:
             max_lost_frames=int(tracker_raw.get("max_lost_frames", 10)),
         ),
         speed=_as_speed(speed_raw, base_dir),
+        enhancement=_as_enhancement(enhancement_raw),
         class_colors={
             str(name): _as_color(color)
             for name, color in (raw.get("class_colors") or {}).items()

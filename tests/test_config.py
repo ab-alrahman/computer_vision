@@ -47,6 +47,39 @@ class ConfigTests(TestCase):
 
             self.assertFalse(load_config(config_path).speed.enabled)
 
+    def test_load_default_config_enhancement_block(self) -> None:
+        config = load_config("configs/default.yaml")
+
+        self.assertTrue(config.enhancement.enabled)
+        self.assertTrue(config.enhancement.denoise)
+        self.assertTrue(config.enhancement.clahe)
+        self.assertTrue(config.enhancement.sharpen)
+        self.assertEqual(config.enhancement.clahe_clip_limit, 2.0)
+        self.assertEqual(config.enhancement.clahe_grid, 8)
+        self.assertEqual(config.enhancement.sharpen_amount, 0.6)
+
+    def test_enhancement_defaults_apply_without_a_block(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config_path = root / "minimal.yaml"
+            config_path.write_text("model:\n  path: models/yolo11n.pt\n", encoding="utf-8")
+
+            config = load_config(config_path)
+
+            self.assertTrue(config.enhancement.enabled)
+            self.assertEqual(config.enhancement.denoise_diameter, 5)
+            self.assertEqual(config.enhancement.denoise_sigma_color, 40.0)
+            self.assertEqual(config.enhancement.sharpen_radius, 3.0)
+
+    def test_enhancement_rejects_even_denoise_diameter(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config_path = root / "bad.yaml"
+            config_path.write_text("enhancement:\n  denoise_diameter: 4\n", encoding="utf-8")
+
+            with self.assertRaises(ValueError):
+                load_config(config_path)
+
     def test_relative_paths_resolve_from_project_root(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)

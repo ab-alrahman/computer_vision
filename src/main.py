@@ -11,6 +11,7 @@ from src.core.config import AppConfig, load_config
 from src.core.types import PassageEvent
 from src.pipeline.annotator import Annotator, VideoWriter
 from src.pipeline.detector import YoloDetector
+from src.pipeline.enhance import FrameEnhancer
 from src.pipeline.geometry import CountingLine, LineCounter
 from src.pipeline.rules import RuleEngine
 from src.pipeline.source import VideoSource
@@ -142,6 +143,16 @@ def main() -> int:
             speed_hysteresis_kph=config.speed.hysteresis_kph,
         )
         annotator = Annotator(config.class_colors)
+        enhancer = FrameEnhancer(config.enhancement)
+        if enhancer.active:
+            print("[enhance] frame enhancement enabled")
+            print(f"  denoise: {config.enhancement.denoise}")
+            print(f"  clahe: {config.enhancement.clahe} "
+                  f"clip={config.enhancement.clahe_clip_limit:.1f} grid={config.enhancement.clahe_grid}")
+            print(f"  sharpen: {config.enhancement.sharpen} amount={config.enhancement.sharpen_amount:.2f}")
+        else:
+            print("[enhance] frame enhancement disabled")
+
 
         frames_seen = 0
         total_detections = 0
@@ -155,7 +166,8 @@ def main() -> int:
                 writer = VideoWriter(output_path, source.fps, (width, height))
                 writer.__enter__()
             try:
-                detections = detector.detect(frame.image)
+                enhanced = enhancer.apply(frame.image)
+                detections = detector.detect(enhanced)
                 tracks = tracker.update(detections)
                 speeds: dict[int, TrackSpeed] = {}
                 if speed_monitor is not None:
@@ -182,14 +194,14 @@ def main() -> int:
                     "max avg kph": f"{fastest:.1f}",
                 }
                 annotator.draw(
-                    frame.image,
+                    enhanced,
                     tracks,
                     counting_lines,
                     frame_violations,
                     hud,
                     rules.speeding_track_ids(),
                 )
-                writer.write(frame.image)
+                writer.write(enhanced)
                 print(
                     f"[frame {frame.frame_index}] detections={len(detections)} "
                     f"active_tracks={len(tracks)} passages={len(priced_passages)} "

@@ -41,6 +41,19 @@ speed:
   hysteresis_kph: 3.0
   smoothing_alpha: 0.3
 
+enhancement:
+  enabled: true
+  denoise: true
+  denoise_diameter: 5
+  denoise_sigma_color: 40.0
+  denoise_sigma_space: 40.0
+  clahe: true
+  clahe_clip_limit: 2.0
+  clahe_grid: 8
+  sharpen: true
+  sharpen_radius: 3.0
+  sharpen_amount: 0.6
+
 runtime:
   max_frames: 15
   display: false
