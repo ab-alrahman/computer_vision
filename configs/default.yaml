@@ -7,6 +7,10 @@ model:
   path: models/yolo11n.pt
   confidence_threshold: 0.35
   image_size: 640
+  # rare, small classes get a lower bar so they survive the global threshold
+  class_thresholds:
+    motorcycle: 0.15
+    traffic-police motorcycle: 0.15
 
 tracker:
   max_distance_px: 80
@@ -32,6 +36,9 @@ counting_lines:
   - name: main
     points: [[16, 403], [1090, 403]]
     inbound_when_crossing: top_to_bottom
+    # hold fire while a track sits inside this band, so a vehicle stopped on
+    # the line cannot be counted twice or counted on a jittery bounce
+    deadband_px: 12
 
 speed_limit_kph: 80.0
 
@@ -40,6 +47,11 @@ speed:
   calibration: configs/calibration.json
   hysteresis_kph: 3.0
   smoothing_alpha: 0.3
+  # jitter in the bbox turns into phantom speed once you divide by dt;
+  # smooth the ground position BEFORE differencing
+  position_alpha: 0.3
+  min_step_meters: 0.15
+  max_plausible_kph: 160.0
 
 enhancement:
   enabled: true

@@ -55,6 +55,9 @@ def build_speed_monitor(config: AppConfig) -> SpeedMonitor | None:
     return SpeedMonitor(
         homography=Homography.load(calibration_path),
         alpha=config.speed.smoothing_alpha,
+        position_alpha=config.speed.position_alpha,
+        min_step_meters=config.speed.min_step_meters,
+        max_plausible_kph=config.speed.max_plausible_kph,
     )
 
 
@@ -119,6 +122,9 @@ def main() -> int:
         if reference:
             print(f"  reference rectangle: {reference.get('widthMeters')}m x "
                   f"{reference.get('lengthMeters')}m")
+        print(f"  position smoothing: {config.speed.position_alpha:.2f}  "
+              f"min step: {config.speed.min_step_meters:.2f}m  "
+              f"plausibility cap: {config.speed.max_plausible_kph:.0f} kph")
     report_speed_limit = speed_limit if speed_monitor is not None else None
 
     with VideoSource(config.video.input_path) as source:
@@ -130,6 +136,7 @@ def main() -> int:
             model_path=config.model.path,
             confidence_threshold=config.model.confidence_threshold,
             image_size=config.model.image_size,
+            class_thresholds=config.model.class_thresholds,
         )
         tracker = CentroidTracker(
             max_distance_px=config.tracker.max_distance_px,
@@ -232,6 +239,12 @@ def main() -> int:
         print("[rules] smoke rules passed")
         print(f"  violations: {len(violations)}")
         print(f"  speed limit: {speed_limit:.1f} kph")
+        if config.model.class_thresholds:
+            overrides = ", ".join(
+                f"{name}>={value:.2f}"
+                for name, value in sorted(config.model.class_thresholds.items())
+            )
+            print(f"  per-class thresholds: {overrides}")
         for violation in violations[:10]:
             print(f"  - track #{violation.track_id} {violation.event_type.value} {violation.details}")
         for track in tracker.active_tracks[:10]:

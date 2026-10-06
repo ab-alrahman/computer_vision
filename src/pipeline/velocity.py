@@ -113,17 +113,33 @@ class TrackSpeed:
     last_x: float = 0.0
     last_y: float = 0.0
     last_timestamp: float = 0.0
+    smooth_x: float | None = None
+    smooth_y: float | None = None
 
 
 class SpeedMonitor:
     def __init__(self, homography: Homography, alpha: float = 0.3,
-                 max_gap_seconds: float = 1.0, max_idle_seconds: float = 30.0) -> None:
+                 max_gap_seconds: float = 1.0, max_idle_seconds: float = 30.0,
+                 position_alpha: float = 0.3, min_step_meters: float = 0.15,
+                 max_plausible_kph: float = 160.0) -> None:
         if not 0.0 < alpha <= 1.0:
             raise ValueError(f"smoothing alpha must be in (0, 1], got {alpha}")
+        if not 0.0 < position_alpha <= 1.0:
+            raise ValueError(
+                f"position_alpha must be in (0, 1], got {position_alpha}")
+        if min_step_meters < 0.0:
+            raise ValueError(
+                f"min_step_meters must be >= 0, got {min_step_meters}")
+        if max_plausible_kph <= 0.0:
+            raise ValueError(
+                f"max_plausible_kph must be positive, got {max_plausible_kph}")
         self.homography = homography
         self.alpha = alpha
         self.max_gap_seconds = max_gap_seconds
         self.max_idle_seconds = max_idle_seconds
+        self.position_alpha = position_alpha
+        self.min_step_meters = min_step_meters
+        self.max_plausible_kph = max_plausible_kph
         self.states: dict[int, TrackSpeed] = {}
 
     def update(self, tracks: list[Track], timestamp_seconds: float) -> dict[int, TrackSpeed]:
@@ -146,21 +162,34 @@ class SpeedMonitor:
             state = TrackSpeed(track_id=track.track_id)
             self.states[track.track_id] = state
 
+        if state.smooth_x is None or state.smooth_y is None:
+            state.smooth_x, state.smooth_y = world_x, world_y
+        else:
+            state.smooth_x = self._blend(state.smooth_x, world_x)
+            state.smooth_y = self._blend(state.smooth_y, world_y)
+
         delta_t = timestamp_seconds - state.last_timestamp
         if state.samples == 0 or delta_t <= 0:
-            state.last_x, state.last_y = world_x, world_y
-            state.last_timestamp = timestamp_seconds
-            state.samples += 1
+            self._resync(state, timestamp_seconds)
             return
 
         if delta_t > self.max_gap_seconds:
-            state.last_x, state.last_y = world_x, world_y
-            state.last_timestamp = timestamp_seconds
-            state.samples += 1
+            self._resync(state, timestamp_seconds)
             return
 
-        step_meters = float(np.hypot(world_x - state.last_x, world_y - state.last_y))
+        step_meters = float(np.hypot(state.smooth_x - state.last_x,
+                                     state.smooth_y - state.last_y))
+        state.last_x, state.last_y = state.smooth_x, state.smooth_y
+        state.last_timestamp = timestamp_seconds
+        state.samples += 1
+
+        if step_meters < self.min_step_meters:
+            return
+
         instant_kph = (step_meters / delta_t) * KPH
+        if instant_kph > self.max_plausible_kph:
+            return
+
         state.instant_kph = (
             instant_kph
             if state.instant_kph == 0.0
@@ -170,7 +199,13 @@ class SpeedMonitor:
         state.elapsed_seconds += delta_t
         state.average_kph = (state.distance_meters / state.elapsed_seconds) * KPH
         state.max_kph = max(state.max_kph, state.instant_kph)
-        state.last_x, state.last_y = world_x, world_y
+
+    def _blend(self, previous: float, current: float) -> float:
+        return self.position_alpha * current + (1.0 - self.position_alpha) * previous
+
+    def _resync(self, state: TrackSpeed, timestamp_seconds: float) -> None:
+        state.last_x = state.smooth_x or 0.0
+        state.last_y = state.smooth_y or 0.0
         state.last_timestamp = timestamp_seconds
         state.samples += 1
 

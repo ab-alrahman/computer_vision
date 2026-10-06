@@ -133,7 +133,7 @@
 **Source & preprocessing**
 - [ ] `[P0]` `source.py`: video reader in a thread + frame queue + FPS meter
 - [ ] `[P0]` `scripts/cut_video.py`: extract 04:00 → 09:00 into `data/raw/`
-- [ ] `[P1]` `preprocess.py`: denoise + CLAHE, switchable per config
+- [x] `[P1]` `preprocess.py`: denoise + CLAHE, switchable per config — done as `enhance.py` (`bilateral → CLAHE → unsharp`), toggled by `enhancement.enabled`
 - [ ] `[P1]` Auto light/night profile selection from mean brightness
 
 **Detector**
@@ -154,7 +154,7 @@
 - [ ] `[P0]` `geometry.py`: counting line per direction + polygon zones
 - [ ] `[P0]` Direction inference (OUTBOUND / INBOUND)
 - [ ] `[P0]` `counted` flag per track → **no double counting**
-- [ ] `[P0]` Deadband around the line (hysteresis) to survive stops on the line
+- [x] `[P0]` Deadband around the line (hysteresis) to survive stops on the line — `deadband_px`, set to 12
 - [ ] `[P0]` `rules.py`: toll table → `PASSAGE` events with `amount`
 - [ ] `[P0]` `annotator.py`: per-class colors, HUD with live counters
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -11,10 +12,12 @@ VEHICLE_CLASSES = {item.value for item in VehicleClass}
 
 class YoloDetector:
     def __init__(self, model_path: str | Path, confidence_threshold: float = 0.35,
-                 image_size: int = 640) -> None:
+                 image_size: int = 640,
+                 class_thresholds: dict[str, float] | None = None) -> None:
         self.model_path = Path(model_path)
         self.confidence_threshold = confidence_threshold
         self.image_size = image_size
+        self.class_thresholds = class_thresholds or {}
         self._model: Any | None = None
 
     def load(self) -> None:
@@ -28,19 +31,25 @@ class YoloDetector:
 
     def detect(self, image: Any) -> list[Detection]:
         self.load()
+        floor = min([self.confidence_threshold, *self.class_thresholds.values()],
+                    default=self.confidence_threshold)
         results = self._model.predict(
             source=image,
-            conf=self.confidence_threshold,
+            conf=floor,
             imgsz=self.image_size,
             verbose=False,
         )
         if not results:
             return []
         names = getattr(self._model, "names", {})
-        return detections_from_result(results[0], names)
+        return detections_from_result(results[0], names, self._threshold_for)
+
+    def _threshold_for(self, class_name: str) -> float:
+        return self.class_thresholds.get(class_name, self.confidence_threshold)
 
 
-def detections_from_result(result: Any, names: dict[int, str]) -> list[Detection]:
+def detections_from_result(result: Any, names: dict[int, str],
+                           threshold_for: Callable[[str], float] | None = None) -> list[Detection]:
     boxes = getattr(result, "boxes", None)
     if boxes is None or len(boxes) == 0:
         return []
@@ -53,6 +62,8 @@ def detections_from_result(result: Any, names: dict[int, str]) -> list[Detection
     for xyxy, class_id, score in zip(xyxy_rows, class_ids, scores):
         class_name = str(names.get(class_id, class_id))
         if class_name not in VEHICLE_CLASSES:
+            continue
+        if threshold_for is not None and score < threshold_for(class_name):
             continue
         x1, y1, x2, y2 = (float(value) for value in xyxy)
         detections.append(

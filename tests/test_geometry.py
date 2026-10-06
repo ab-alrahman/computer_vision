@@ -3,7 +3,12 @@ from __future__ import annotations
 from unittest import TestCase
 
 from src.core.types import BoundingBox, Direction, Track
-from src.pipeline.geometry import CountingLine, LineCounter, crossed_line
+from src.pipeline.geometry import (
+    CountingLine,
+    LineCounter,
+    crossed_line,
+    signed_distance,
+)
 from src.core.types import Point
 
 
@@ -48,4 +53,44 @@ class GeometryTests(TestCase):
         events = counter.update([track], frame_index=7, timestamp_seconds=1.2)
 
         self.assertEqual(events[0].direction, Direction.OUTBOUND)
+
+
+class DeadbandTests(TestCase):
+    def test_signed_distance_is_in_pixels(self) -> None:
+        line = CountingLine("main", Point(0, 100), Point(200, 100))
+
+        self.assertAlmostEqual(signed_distance(Point(50, 112), line), 12.0, places=6)
+        self.assertAlmostEqual(signed_distance(Point(50, 88), line), -12.0, places=6)
+
+    def test_stop_on_line_is_not_counted(self) -> None:
+        # deadband of 10px around y=100; a vehicle hovering on the line bounces
+        line = CountingLine("main", Point(0, 100), Point(200, 100), deadband_px=10.0)
+        counter = LineCounter(line)
+        track = track_with_history(1, [Point(20, 96), Point(20, 103)])
+
+        events = counter.update([track], frame_index=1, timestamp_seconds=0.1)
+
+        self.assertEqual(events, [])
+        self.assertFalse(track.counted)
+
+    def test_clean_crossing_still_counts_with_deadband(self) -> None:
+        line = CountingLine("main", Point(0, 100), Point(200, 100), deadband_px=10.0)
+        counter = LineCounter(line)
+        track = track_with_history(1, [Point(20, 40), Point(20, 160)])
+
+        events = counter.update([track], frame_index=1, timestamp_seconds=0.1)
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].direction, Direction.INBOUND)
+
+    def test_rearms_after_clearing_the_band(self) -> None:
+        line = CountingLine("main", Point(0, 100), Point(200, 100), deadband_px=10.0)
+        counter = LineCounter(line)
+
+        stuck = track_with_history(1, [Point(20, 96), Point(20, 103)])
+        self.assertEqual(counter.update([stuck], 1, 0.1), [])
+
+        # the track drives clear of the band and crosses for real
+        clear = track_with_history(1, [Point(20, 60), Point(20, 160)])
+        self.assertEqual(len(counter.update([clear], 2, 0.2)), 1)
 

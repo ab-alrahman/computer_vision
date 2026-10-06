@@ -19,6 +19,7 @@ class ModelConfig:
     path: Path
     confidence_threshold: float
     image_size: int
+    class_thresholds: dict[str, float]
 
 
 @dataclass(frozen=True)
@@ -26,6 +27,7 @@ class CountingLineConfig:
     name: str
     points: tuple[tuple[int, int], tuple[int, int]]
     inbound_when_crossing: str
+    deadband_px: float
 
 
 @dataclass(frozen=True)
@@ -46,6 +48,9 @@ class SpeedConfig:
     calibration_path: Path | None
     hysteresis_kph: float
     smoothing_alpha: float
+    position_alpha: float
+    min_step_meters: float
+    max_plausible_kph: float
 
 
 @dataclass(frozen=True)
@@ -95,10 +100,14 @@ def _as_line(raw: dict[str, Any]) -> CountingLineConfig:
     if not isinstance(points, list) or len(points) != 2:
         raise ValueError(f"counting line needs two points, got {points!r}")
     parsed = tuple((int(point[0]), int(point[1])) for point in points)
+    deadband_px = float(raw.get("deadband_px", 0.0))
+    if deadband_px < 0.0:
+        raise ValueError(f"counting line deadband_px must be >= 0, got {deadband_px}")
     return CountingLineConfig(
         name=str(raw.get("name", "main")),
         points=parsed,  # type: ignore[arg-type]
         inbound_when_crossing=str(raw.get("inbound_when_crossing", "top_to_bottom")),
+        deadband_px=deadband_px,
     )
 
 
@@ -110,6 +119,9 @@ def _as_speed(raw: dict[str, Any], base_dir: Path) -> SpeedConfig:
         calibration_path=calibration_path,
         hysteresis_kph=float(raw.get("hysteresis_kph", 3.0)),
         smoothing_alpha=float(raw.get("smoothing_alpha", 0.3)),
+        position_alpha=float(raw.get("position_alpha", 0.3)),
+        min_step_meters=float(raw.get("min_step_meters", 0.15)),
+        max_plausible_kph=float(raw.get("max_plausible_kph", 160.0)),
     )
 
 
@@ -160,6 +172,10 @@ def load_config(path: str | Path) -> AppConfig:
             path=_resolve_path(model_raw.get("path", "models/yolo11n.pt"), base_dir),
             confidence_threshold=float(model_raw.get("confidence_threshold", 0.35)),
             image_size=int(model_raw.get("image_size", 640)),
+            class_thresholds={
+                str(name): float(value)
+                for name, value in (model_raw.get("class_thresholds") or {}).items()
+            },
         ),
         tracker=TrackerConfig(
             max_distance_px=float(tracker_raw.get("max_distance_px", 80.0)),
