@@ -4,7 +4,7 @@ video:
   report: runs/vision/report.json
 
 model:
-  path: models/yolo11n.pt
+  path: models/best.pt
   confidence_threshold: 0.35
   image_size: 640
   # rare, small classes get a lower bar so they survive the global threshold

@@ -1,4 +1,4 @@
-path: D:/Computer_Vision_Course-main/computer_vision/data/raw/dataset
+path: raw/dataset
 
 train: train/images
 val: valid/images
