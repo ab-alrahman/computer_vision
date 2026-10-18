@@ -94,3 +94,16 @@ class DeadbandTests(TestCase):
         clear = track_with_history(1, [Point(20, 60), Point(20, 160)])
         self.assertEqual(len(counter.update([clear], 2, 0.2)), 1)
 
+    def test_counts_slow_crossing_through_deadband(self) -> None:
+        line = CountingLine("main", Point(0, 100), Point(200, 100), deadband_px=10.0)
+        counter = LineCounter(line)
+        track = track_with_history(1, [Point(20, 80)])
+
+        events = []
+        for frame_index, y in enumerate([90, 97, 103, 110, 120], start=1):
+            track.history.append(Point(20, y))
+            events.extend(counter.update([track], frame_index, frame_index / 10))
+
+        self.assertEqual(len(events), 1)
+        self.assertTrue(track.counted)
+

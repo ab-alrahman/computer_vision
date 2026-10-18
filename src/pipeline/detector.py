@@ -4,10 +4,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from src.core.types import BoundingBox, Detection, VehicleClass
-
-
-VEHICLE_CLASSES = {item.value for item in VehicleClass}
+from src.core.types import BoundingBox, Detection
 
 
 class YoloDetector:
@@ -61,8 +58,6 @@ def detections_from_result(result: Any, names: dict[int, str],
     detections: list[Detection] = []
     for xyxy, class_id, score in zip(xyxy_rows, class_ids, scores):
         class_name = str(names.get(class_id, class_id))
-        if class_name not in VEHICLE_CLASSES:
-            continue
         if threshold_for is not None and score < threshold_for(class_name):
             continue
         x1, y1, x2, y2 = (float(value) for value in xyxy)

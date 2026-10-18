@@ -19,15 +19,16 @@ class FakeBoxes:
 
 
 class DetectorTests(TestCase):
-    def test_converts_yolo_boxes_to_vehicle_detections(self) -> None:
+    def test_converts_yolo_boxes_to_model_detections(self) -> None:
         result = SimpleNamespace(boxes=FakeBoxes())
 
         detections = detections_from_result(result, {2: "car", 0: "person"})
 
-        self.assertEqual(len(detections), 1)
+        self.assertEqual(len(detections), 2)
         self.assertEqual(detections[0].class_name, "car")
         self.assertEqual(detections[0].score, 0.91)
         self.assertEqual(detections[0].bbox.x1, 10)
+        self.assertEqual(detections[1].class_name, "person")
 
     def test_returns_empty_list_when_result_has_no_boxes(self) -> None:
         result = SimpleNamespace(boxes=None)

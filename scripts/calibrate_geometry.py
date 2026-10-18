@@ -127,7 +127,9 @@ def pick_points(frame: np.ndarray) -> list[tuple[float, float]]:
     canvas = frame.copy()
     points: list[tuple[float, float]] = []
 
-    def on_click(event: int, x: int, y: int, _flags) -> None:
+    # OpenCV 4 calls callbacks with four arguments; OpenCV 5 may include the
+    # optional userdata argument as a fifth one.
+    def on_click(event: int, x: int, y: int, _flags, _userdata=None) -> None:
         if event != cv2.EVENT_LBUTTONDOWN or len(points) >= 4:
             return
         if not (0 <= x < width and 0 <= y < height):

@@ -44,6 +44,9 @@ class LineCounter:
     def __init__(self, line: CountingLine) -> None:
         self.line = line
         self._armed: dict[int, bool] = {}
+        # Side of the line before a track entered the deadband. This lets us
+        # detect slow crossings that take several frames to complete.
+        self._clear_side: dict[int, int] = {}
 
     def update(self, tracks: list[Track], frame_index: int,
                timestamp_seconds: float) -> list[PassageEvent]:
@@ -54,20 +57,30 @@ class LineCounter:
             previous = track.history[-2]
             current = track.history[-1]
 
-            # A track sitting on the line jitters across it every frame. Ignore
-            # any crossing whose endpoints are still inside the deadband, and
-            # keep ignoring until it has clearly cleared the band.
-            inside_band = (
-                self._within_deadband(previous) or self._within_deadband(current)
-            )
-            if inside_band:
+            previous_side = _side_sign(signed_side(previous, self.line))
+            current_side = _side_sign(signed_side(current, self.line))
+            previous_inside = self._within_deadband(previous)
+            current_inside = self._within_deadband(current)
+
+            # Remember the side from which the track entered the deadband.
+            if not previous_inside and previous_side:
+                self._clear_side[track.track_id] = previous_side
+
+            # Wait until the track has clearly left the deadband. The actual
+            # crossing may have happened several frames earlier.
+            if current_inside:
                 self._armed[track.track_id] = False
                 continue
 
-            if not self._armed.get(track.track_id, True):
-                self._armed[track.track_id] = True
+            if not current_side:
+                continue
 
-            if not crossed_line(previous, current, self.line):
+            starting_side = self._clear_side.get(track.track_id, previous_side)
+            crossed = starting_side and starting_side != current_side
+            self._clear_side[track.track_id] = current_side
+            self._armed[track.track_id] = True
+
+            if not crossed:
                 continue
 
             self._armed[track.track_id] = False
@@ -88,6 +101,14 @@ class LineCounter:
 
     def _within_deadband(self, point: Point) -> bool:
         return abs(signed_distance(point, self.line)) <= self.line.deadband_px
+
+
+def _side_sign(value: float) -> int:
+    if value < 0.0:
+        return -1
+    if value > 0.0:
+        return 1
+    return 0
 
 
 def crossed_line(previous: Point, current: Point, line: CountingLine) -> bool:
