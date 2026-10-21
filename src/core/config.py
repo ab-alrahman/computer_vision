@@ -17,6 +17,7 @@ class VideoConfig:
 @dataclass(frozen=True)
 class ModelConfig:
     path: Path
+    paths: tuple[Path, ...]
     confidence_threshold: float
     image_size: int
     class_thresholds: dict[str, float]
@@ -170,6 +171,10 @@ def load_config(path: str | Path) -> AppConfig:
         ),
         model=ModelConfig(
             path=_resolve_path(model_raw.get("path", "models/yolo11n.pt"), base_dir),
+            paths=tuple(
+                _resolve_path(value, base_dir)
+                for value in (model_raw.get("paths") or [model_raw.get("path", "models/yolo11n.pt")])
+            ),
             confidence_threshold=float(model_raw.get("confidence_threshold", 0.35)),
             image_size=int(model_raw.get("image_size", 640)),
             class_thresholds={

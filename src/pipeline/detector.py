@@ -45,6 +45,50 @@ class YoloDetector:
         return self.class_thresholds.get(class_name, self.confidence_threshold)
 
 
+class MultiModelDetector:
+    """Run several YOLO models and keep the strongest non-duplicate boxes."""
+
+    def __init__(self, model_paths: list[str | Path], confidence_threshold: float = 0.35,
+                 image_size: int = 640,
+                 class_thresholds: dict[str, float] | None = None,
+                 iou_threshold: float = 0.5) -> None:
+        self.detectors = [
+            YoloDetector(path, confidence_threshold, image_size, class_thresholds)
+            for path in model_paths
+        ]
+        self.iou_threshold = iou_threshold
+
+    def detect(self, image: Any) -> list[Detection]:
+        detections: list[Detection] = []
+        for detector in self.detectors:
+            detections.extend(detector.detect(image))
+        return merge_detections(detections, self.iou_threshold)
+
+
+def merge_detections(detections: list[Detection], iou_threshold: float = 0.5) -> list[Detection]:
+    """Class-agnostic NMS: overlapping boxes keep the highest confidence one."""
+    kept: list[Detection] = []
+    for detection in sorted(detections, key=lambda item: item.score, reverse=True):
+        if any(_box_iou(detection.bbox, existing.bbox) >= iou_threshold for existing in kept):
+            continue
+        kept.append(detection)
+    return kept
+
+
+def _box_iou(first: BoundingBox, second: BoundingBox) -> float:
+    x1 = max(first.x1, second.x1)
+    y1 = max(first.y1, second.y1)
+    x2 = min(first.x2, second.x2)
+    y2 = min(first.y2, second.y2)
+    intersection = max(0.0, x2 - x1) * max(0.0, y2 - y1)
+    if intersection == 0.0:
+        return 0.0
+    first_area = max(0.0, first.x2 - first.x1) * max(0.0, first.y2 - first.y1)
+    second_area = max(0.0, second.x2 - second.x1) * max(0.0, second.y2 - second.y1)
+    union = first_area + second_area - intersection
+    return intersection / union if union else 0.0
+
+
 def detections_from_result(result: Any, names: dict[int, str],
                            threshold_for: Callable[[str], float] | None = None) -> list[Detection]:
     boxes = getattr(result, "boxes", None)

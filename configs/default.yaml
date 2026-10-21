@@ -4,13 +4,15 @@ video:
   report: runs/vision/report.json
 
 model:
-  path: models/best.pt
+  paths:
+    - models/best.pt
+    - models/yolo11n.pt
   confidence_threshold: 0.35
   image_size: 640
   # rare, small classes get a lower bar so they survive the global threshold
-  class_thresholds:
-    motorcycle: 0.15
-    traffic-police motorcycle: 0.15
+  # class_thresholds:
+  #   motorcycle: 0.15
+  #   traffic-police motorcycle: 0.15
 
 tracker:
   max_distance_px: 80
@@ -40,7 +42,7 @@ counting_lines:
     # the line cannot be counted twice or counted on a jittery bounce
     deadband_px: 12
 
-speed_limit_kph: 80.0
+speed_limit_kph: 20.0
 
 speed:
   enabled: true
@@ -67,5 +69,5 @@ enhancement:
   sharpen_amount: 0.6
 
 runtime:
-  max_frames: 15
-  display: false
+  max_frames: 500
+  display: true

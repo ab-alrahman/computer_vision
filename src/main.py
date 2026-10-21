@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.core.config import AppConfig, load_config
 from src.core.types import PassageEvent
 from src.pipeline.annotator import Annotator, VideoWriter
-from src.pipeline.detector import YoloDetector
+from src.pipeline.detector import MultiModelDetector
 from src.pipeline.enhance import FrameEnhancer
 from src.pipeline.geometry import CountingLine, LineCounter
 from src.pipeline.rules import RuleEngine
@@ -98,15 +98,18 @@ def main() -> int:
     speed_limit = resolve_speed_limit(config.speed_limit_kph, args.speed_limit)
 
     print("[config] loaded")
-    print(f"  model: {config.model.path}")
+    print("  models:")
+    for model_path in config.model.paths:
+        print(f"    - {model_path}")
     print(f"  input: {config.video.input_path}")
     print(f"  output: {output_path}")
     print(f"  report: {report_path}")
     print(f"  max frames: {'all' if max_frames is None else max_frames}")
     print(f"  speed limit: {speed_limit:.1f} kph")
 
-    if not config.model.path.is_file():
-        raise SystemExit(f"[model] missing model file: {config.model.path}")
+    missing_models = [path for path in config.model.paths if not path.is_file()]
+    if missing_models:
+        raise SystemExit(f"[model] missing model file(s): {', '.join(map(str, missing_models))}")
 
     if not config.video.input_path.is_file():
         print("[source] input video is not present yet; skeleton is ready")
@@ -132,8 +135,8 @@ def main() -> int:
         print(f"  fps: {source.fps:.2f}")
         print(f"  frames: {source.frame_count}")
 
-        detector = YoloDetector(
-            model_path=config.model.path,
+        detector = MultiModelDetector(
+            model_paths=list(config.model.paths),
             confidence_threshold=config.model.confidence_threshold,
             image_size=config.model.image_size,
             class_thresholds=config.model.class_thresholds,

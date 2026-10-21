@@ -6,3 +6,5 @@ __pycache__/
 .venv/
 .env
 data/raw/
+H.M/
+augmented_dataset/

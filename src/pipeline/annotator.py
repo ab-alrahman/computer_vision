@@ -10,7 +10,7 @@ from src.pipeline.geometry import CountingLine
 
 
 VIOLATION_COLOR = (0, 0, 255)
-DEFAULT_COLOR = (255, 255, 255)
+DEFAULT_COLOR = (0, 0, 0)
 COUNTING_LINE_COLOR = (192, 192, 192)
 
 
