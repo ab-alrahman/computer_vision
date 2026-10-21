@@ -85,5 +85,5 @@ def draw_hud(image, counters: dict[str, int]) -> None:
     y = 24
     for label, value in counters.items():
         cv2.putText(image, f"{label}: {value}", (12, y), cv2.FONT_HERSHEY_SIMPLEX,
-                    0.55, (255, 255, 255), 2, cv2.LINE_AA)
+                    0.55, (0, 0, 0), 2, cv2.LINE_AA)
         y += 22
